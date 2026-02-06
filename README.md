@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Executive Personality Assessment System
+
+A scientifically-based personality assessment application built with Next.js and Tailwind CSS.
+This application provides two modes of analysis based on the International Personality Item Pool (IPIP):
+
+1.  **Basic Insight (IPIP-50)**: A quick 50-question assessment to determine your Big Five traits and SLOAN type.
+2.  **Detail Analysis (IPIP-NEO-120)**: A comprehensive 120-question assessment that breaks down the Big Five into 30 distinct facets for deep self-understanding.
+
+## Features
+
+*   **Scientific Accuracy**: Based on the widely respected IPIP-NEO model.
+*   **Executive Design**: Premium, high-end UI designed for professional contexts.
+*   **Dual Modes**: Choose between quick overview or deep dive.
+*   **Detailed Feedback**:
+    *   Big Five Domain Scores & Facet Breakdown
+    *   SLOAN Personality Type Classification
+    *   Communication Strategies (Strengths & Risks)
+    *   Career Recommendations
+    *   Statistical Behavioral Predictions (Health, Finance, etc.)
+*   **Responsive**: Fully optimized for Desktop, Tablet, and Mobile devices.
+
+## Tech Stack
+
+*   **Framework**: Next.js 15 (App Router)
+*   **Styling**: Tailwind CSS
+*   **Font**: Playfair Display (Serif) & Geist Sans
+*   **Language**: TypeScript
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
