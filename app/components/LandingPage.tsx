@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
+import { BLOG_POSTS } from '../data/blogPosts';
 
 export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NEO' | 'CLASSIC') => void }) {
     return (
@@ -91,6 +93,53 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
                 </div>
             </section>
 
+
+
+            {/* Latest Columns Section */}
+            <section className="py-24 px-4 bg-gray-50 border-t border-gray-100">
+                <div className="max-w-6xl mx-auto">
+                    <div className="flex justify-between items-end mb-12">
+                        <div>
+                            <span className="text-yellow-600 font-bold tracking-widest uppercase text-xs mb-2 block">Science & Columns</span>
+                            <h2 className="text-4xl font-serif font-bold text-gray-900">Latest Insights</h2>
+                        </div>
+                        <Link href="/blog" className="hidden md:inline-flex items-center text-sm font-bold text-gray-900 border-b-2 border-yellow-500 pb-1 hover:text-yellow-700 transition-colors">
+                            View All Articles →
+                        </Link>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {BLOG_POSTS.slice(0, 3).map((post) => (
+                            <Link key={post.id} href={`/blog/${post.slug}`} className="group block bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                                <div className="p-6">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 px-2 py-1 rounded uppercase tracking-wider">
+                                            {post.category}
+                                        </span>
+                                        <span className="text-xs text-gray-400 ml-auto">
+                                            {post.publishedAt}
+                                        </span>
+                                    </div>
+                                    <h3 className="text-lg font-serif font-bold text-gray-900 mb-2 group-hover:text-yellow-700 transition-colors">
+                                        {post.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 line-clamp-3 leading-relaxed">
+                                        {post.excerpt}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="mt-8 text-center md:hidden">
+                        <Link href="/blog" className="inline-block text-sm font-bold text-gray-900 border-b-2 border-yellow-500 pb-1">
+                            View All Articles →
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+
             {/* Selection Section */}
             <section id="selection" className="py-24 px-4 bg-[#FAFAF9]">
                 <div className="max-w-6xl mx-auto text-center mb-16">
@@ -160,6 +209,6 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
                 <p className="text-gray-300 text-[10px] mt-2">Based on IPIP-NEO / Scientific use only</p>
             </footer>
 
-        </div>
+        </div >
     );
 }

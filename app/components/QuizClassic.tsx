@@ -4,6 +4,10 @@ import React, { useState } from 'react';
 import { questions, Question } from '../data/questions';
 import { getSloanType } from '../data/sloan';
 import { getPredictions } from '../data/predictions';
+import { getRelationshipAdvice } from '../data/compatibility';
+import html2canvas from 'html2canvas';
+
+import jsPDF from 'jspdf';
 
 const OPTIONS = [
     { value: 1, label: '全く当てはまらない' },
@@ -17,6 +21,10 @@ export default function QuizClassic() {
     const [answers, setAnswers] = useState<Record<number, number>>({});
     const [showResult, setShowResult] = useState(false);
     const [resultData, setResultData] = useState<any>(null);
+
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleOptionChange = (qId: number, value: number) => {
         setAnswers((prev) => ({ ...prev, [qId]: value }));
@@ -45,7 +53,8 @@ export default function QuizClassic() {
         Object.keys(scores).forEach(trait => {
             const key = trait as keyof typeof scores;
             if (counts[key] > 0) {
-                normalizedScores[key] = Math.round((scores[key] / (counts[key] * 5)) * 100);
+                // Formula: ((Score - Count) / (Count * 4)) * 100
+                normalizedScores[key] = Math.round(((scores[key] - counts[key]) / (counts[key] * 4)) * 100);
             }
         });
 
@@ -59,16 +68,43 @@ export default function QuizClassic() {
         }
         const domainScores = calculateScores();
         const sloan = getSloanType(domainScores);
-        setResultData({ scores: domainScores, sloan });
+        const predictions = getPredictions(domainScores);
+        setResultData({ scores: domainScores, sloan, predictions });
         setShowResult(true);
     };
 
     if (showResult && resultData) {
-        const { scores, sloan } = resultData;
-        const predictions = getPredictions(scores);
+        const { scores, sloan, predictions } = resultData;
+        const relationship = getRelationshipAdvice(scores);
+
+        const handleDownloadPDF = async () => {
+            const element = document.getElementById('result-container');
+            if (!element) return;
+
+            try {
+                await new Promise(r => setTimeout(r, 500));
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: true,
+                    backgroundColor: '#FAFAF9'
+                });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`personality-report-${sloan.code}.pdf`);
+            } catch (err) {
+                console.error(err);
+                alert("PDF生成に失敗しました: " + (err instanceof Error ? err.message : String(err)));
+            }
+        };
 
         return (
-            <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans">
+            <div id="result-container" className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans bg-[#FAFAF9]">
 
                 {/* Header Section */}
                 <div className="text-center mb-16 relative">
@@ -88,7 +124,7 @@ export default function QuizClassic() {
                         <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
                                 <span className="w-1 h-6 bg-green-500 mr-3"></span>
-                                Executive Summary
+                                性格診断レポート
                             </h3>
                             <div className="space-y-4 text-gray-600 leading-loose text-justify font-light">
                                 {sloan.description.map((line: string, i: number) => (
@@ -100,7 +136,7 @@ export default function QuizClassic() {
                         {/* Score Chart (Simple for Classic) */}
                         <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-8 border-b border-gray-100 pb-4">
-                                Trait Breakdown
+                                構成要素（スコア）
                             </h3>
                             <div className="space-y-6">
                                 {Object.entries(scores).map(([trait, score]) => (
@@ -119,7 +155,7 @@ export default function QuizClassic() {
                         <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
                                 <span className="w-1 h-6 bg-blue-900 mr-3"></span>
-                                Communication Strategy
+                                コミュニケーション戦略
                             </h3>
 
                             <div className="grid sm:grid-cols-2 gap-8">
@@ -162,10 +198,10 @@ export default function QuizClassic() {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full -z-0"></div>
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center relative z-10">
                                 <span className="w-1 h-6 bg-purple-900 mr-3"></span>
-                                Statistical Forecast (Beta)
+                                統計的傾向（予後予測）
                             </h3>
                             <div className="grid gap-4 sm:grid-cols-2 relative z-10">
-                                {predictions.map((pred) => (
+                                {predictions.map((pred: any) => (
                                     <div key={pred.id} className="bg-gray-50 p-5 rounded-lg border border-gray-100 hover:shadow-md transition-shadow">
                                         <div className="flex items-center gap-2 mb-3">
                                             <span className="text-[10px] font-bold text-purple-900 tracking-widest uppercase border border-purple-200 px-2 py-1 rounded">
@@ -184,9 +220,36 @@ export default function QuizClassic() {
                             </div>
                         </section>
 
+                        {/* Partner Compatibility (Classic) */}
+                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
+                                <span className="w-1 h-6 bg-pink-500 mr-3"></span>
+                                理想のパートナー像
+                            </h3>
+
+                            <div className="bg-pink-50 p-6 rounded-xl border border-pink-100 mb-8 text-center">
+                                <span className="text-xs font-bold text-pink-500 tracking-widest uppercase mb-2 block">Best Match</span>
+                                <div className="text-4xl mb-4 text-pink-500">{relationship.idealPartnerIcon}</div>
+                                <h4 className="text-2xl font-serif font-bold text-gray-900 mb-3">{relationship.idealPartnerType}</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed font-light italic">"{relationship.idealPartnerDescription}"</p>
+                            </div>
+
+                            <div className="grid gap-4">
+                                {relationship.idealPartnerTraits.map((t, i) => (
+                                    <div key={i} className="flex items-start bg-pink-50/50 p-4 rounded-lg border border-pink-100">
+                                        <span className="text-pink-500 text-lg mr-3">♥</span>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-sm mb-1">{t.trait}</h4>
+                                            <p className="text-xs text-gray-600">{t.reason}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
                         {/* Careers */}
                         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">Recommended Career Paths</h3>
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">おすすめのキャリア</h3>
                             <div className="flex flex-wrap gap-2">
                                 {sloan.careers.map((c: string, i: number) => (
                                     <span key={i} className="px-3 py-1 bg-gray-50 text-gray-700 text-xs font-medium uppercase tracking-wider border border-gray-200">{c}</span>
@@ -197,7 +260,7 @@ export default function QuizClassic() {
                     </div>
                 </div>
 
-                <div className="mt-16 text-center">
+                <div className="mt-16 text-center space-x-4">
                     <button
                         onClick={() => {
                             setAnswers({});
@@ -208,6 +271,12 @@ export default function QuizClassic() {
                         className="px-8 py-3 bg-gray-900 text-white font-serif tracking-widest hover:bg-black transition shadow-lg text-sm"
                     >
                         RETAKE ASSESSMENT
+                    </button>
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="px-8 py-3 bg-white text-gray-900 border border-gray-200 font-serif tracking-widest hover:bg-gray-50 transition shadow-lg text-sm"
+                    >
+                        DOWNLOAD PDF
                     </button>
                 </div>
             </div>
@@ -226,6 +295,33 @@ export default function QuizClassic() {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 font-serif">Quick Analysis</p>
                     <h1 className="text-4xl font-serif font-bold text-gray-900">Big Five (IPIP-50)</h1>
                     <div className="mt-4 w-24 h-1 bg-green-500 mx-auto"></div>
+                </div>
+
+                {/* Legend for Scale */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
+                    <p className="text-sm text-gray-500 mb-4 font-medium">以下の質問に対して、最も当てはまる番号を選んでください</p>
+                    <div className="flex flex-wrap justify-center gap-2 sm:gap-6 text-xs sm:text-sm font-bold text-gray-600">
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">1</div>
+                            <span className="text-gray-400">全く違う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">2</div>
+                            <span className="text-gray-400">違う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">3</div>
+                            <span className="text-gray-400">どちらでもない</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">4</div>
+                            <span className="text-gray-400">そう思う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-900 text-white shadow-lg flex items-center justify-center mb-1">5</div>
+                            <span className="text-gray-900">強くそう思う</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Progress */}

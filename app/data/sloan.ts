@@ -255,6 +255,41 @@ const CAREER_DB = [
     { name: 'コンサルタント', traits: ['E+', 'O+', 'N-'] },
 ];
 
+export const SLOAN_TYPES: Record<string, { title: string; jaTitle: string; icon: string; description: string }> = {
+    'SCOAI': { title: 'The Angelic Visionary', jaTitle: '愛と秩序の革命家', icon: '😇', description: '社交的で情熱的、そして高い知性と計画性を兼ね備えたリーダータイプです。人々の幸福を願い、理想を実現するために周りを巻き込んで突き進むカリスマ性があります。' },
+    'SCOAN': { title: 'The Guardian', jaTitle: '慈愛の守護者', icon: '🛡️', description: '伝統と秩序を重んじ、コミュニティの和を大切にする博愛主義者です。揺るぎない安定感で周囲を支え、誰もが安心して暮らせる環境を作り出します。' },
+    'SCOEI': { title: 'The Boss', jaTitle: '冷徹な実力者', icon: '💼', description: '圧倒的な行動力と論理的思考で、どんな困難なプロジェクトも成功に導くビジネスリーダーです。感情に流されず、効率と結果を最優先に追求します。' },
+    'SCOEN': { title: 'The Taskmaster', jaTitle: '鉄の規律者', icon: '🤖', description: 'ルールと秩序を徹底し、組織を完璧に統率する管理者です。私情を挟まない公平な判断と、揺るがない責任感で、周囲から厚い信頼を得ています。' },
+    'SCUAI': { title: 'The Free Spirit', jaTitle: '自由な博愛主義者', icon: '🕊️', description: '誰とでもすぐに打ち解ける明るさと、柔軟な発想を持つムードメーカーです。計画よりもその場の「ノリ」と「パッション」を大切にし、毎日を祭りのように楽しみます。' },
+    'SCUAN': { title: 'The Gentle Soul', jaTitle: '穏やかな平和主義者', icon: '🍵', description: '争いを好まず、人との調和を何よりも大切にする癒やし系です。細かいことは気にせず、流れに身を任せて生きるその姿は、周りの人の肩の力を抜いてくれます。' },
+    'SCUEI': { title: 'The Entrepreneur', jaTitle: '大胆不敵な勝負師', icon: '🎲', description: 'リスクを恐れず、チャンスがあれば即座に飛び込む起業家タイプです。常識にとらわれない発想と行動力で、誰も見たことのない新しい道を切り拓きます。' },
+    'SCUEN': { title: 'The Realist', jaTitle: 'ドライな現実主義者', icon: '🕶️', description: '感情や理想論に振り回されず、目の前の現実を淡々と処理する実務家です。複雑な問題もシンプルに解決するその手腕は、職人芸の域に達しています。' },
+    'SLOAI': { title: 'The Sensitive Doer', jaTitle: '情熱的な奉仕者', icon: '❤️‍🔥', description: '人々の痛みに深く共感し、社会を良くするために尽くす活動家です。感受性が強く涙もろい一面もありますが、その「想いの強さ」が人を動かす原動力になります。' },
+    'SLOAN': { title: 'The Traditionalist', jaTitle: '誠実な慎重派', icon: '📚', description: 'リスクを敏感に察知し、しっかりと準備を整えてから行動する堅実なタイプです。派手さはありませんが、約束を必ず守る誠実さで、長期的な信頼を築き上げます。' },
+    'SLOEI': { title: 'The Dictator', jaTitle: '激情型の支配者', icon: '👑', description: '激しい感情と強い目的意識を持ち、自らの力で世界を変えようとする野心家です。時に感情が爆発することもありますが、そのエネルギーの大きさは誰にも真似できません。' },
+    'SLOEN': { title: 'The Bureaucrat', jaTitle: '厳格な管理者', icon: '📝', description: '不正や怠慢を許さず、高い基準で自分も他人も律する規律の番人です。心配性な一面は「転ばぬ先の杖」として機能し、組織を致命的な失敗から守ります。' },
+    'SLUAI': { title: 'The Chaotic Angel', jaTitle: '涙もろい自由人', icon: '🎭', description: '感情豊かで天真爛漫、まるで映画の主人公のようなドラマチックな人生を送る人です。気分の浮き沈みは激しいですが、その人間味あふれる魅力で多くの人に愛されます。' },
+    'SLUAN': { title: 'The Follower', jaTitle: '誰かに寄り添う人', icon: '🐈', description: '自分の意見を押し通すよりも、誰かのサポート役として輝くタイプです。不安を感じやすい分、他人の不安にも敏感で、細やかな気配りができます。' },
+    'SLUEI': { title: 'The Rebel', jaTitle: '反逆のカリスマ', icon: '🎸', description: '既存のルールや権威に反発し、自分の感性と衝動に従って生きるロックな魂の持ち主です。その危うさと儚さが、強烈な個性を放ちます。' },
+    'SLUEN': { title: 'The Skeptic', jaTitle: '孤独な懐疑論者', icon: '🕵️', description: '世の中の常識や流行を疑い、独自の視点で真実を探求する孤高の存在です。人付き合いは苦手ですが、その鋭い洞察力は時に本質を射抜きます。' },
+    'RCOAI': { title: 'The Scholar', jaTitle: '聡明な隠者', icon: '🦉', description: '静かな環境で読書や思索に耽ることを好む、知的な賢者タイプです。表には出ませんが、内面には熱い理想と深い知恵を秘めています。' },
+    'RCOAN': { title: 'The Good Citizen', jaTitle: '静かなる良き隣人', icon: '🏡', description: '目立つことは好みませんが、自分の役割を黙々とこなし、社会を底辺で支える縁の下の力持ちです。穏やかで誠実な人柄は、周囲に安心感を与えます。' },
+    'RCOEI': { title: 'The Mastermind', jaTitle: '冷静沈着な策士', icon: '♟️', description: '感情を表に出さず、淡々と、しかし着実に目標を達成する戦略家です。一人で集中して作業することを好み、圧倒的な生産性を叩き出します。' },
+    'RCOEN': { title: 'The Mechanic', jaTitle: '孤高の職人', icon: '🔧', description: '自分の仕事に妥協を許さず、完璧を追求するプロフェッショナルです。他人に干渉されるのを嫌い、自分だけの城（領域）を守り抜きます。' },
+    'RCUAI': { title: 'The Dreamer', jaTitle: '夢見る哲学者', icon: '🌙', description: '現実世界よりも、自分の頭の中にある空想の世界を愛するドリーマーです。独自の美学と世界観を持ち、芸術や創作活動で才能を発揮します。' },
+    'RCUAN': { title: 'The Peaceful', jaTitle: '争いを好まない仙人', icon: '🏞️', description: '世俗の欲や競争から離れ、心静かに暮らすことを望むタイプです。少ない物で満足し、精神的な豊かさを大切にする生き方は、現代の隠遁者と言えます。' },
+    'RCUEI': { title: 'The Innovator', jaTitle: '独自の道を歩く天才', icon: '💡', description: '誰も思いつかないような独創的なアイデアを、ひょうひょうと実現してしまう天才肌です。他人の評価を気にせず、我が道を行くスタイルを貫きます。' },
+    'RCUEN': { title: 'The Minimalist', jaTitle: '無駄を嫌う合理主義者', icon: '📦', description: '感情や装飾を削ぎ落とし、機能美と効率性を極限まで追求するミニマリストです。シンプルで本質的な生き方が、洗練された印象を与えます。' },
+    'RLOAI': { title: 'The Martyr', jaTitle: '献身的な理想家', icon: '🕯️', description: '自分のことよりも他人の幸せを優先し、自己犠牲も厭わない聖人のような心を持っています。その純粋すぎる優しさに、周囲は心を洗われます。' },
+    'RLOAN': { title: 'The Worrier', jaTitle: '思慮深い慎重派', icon: '☂️', description: '石橋を叩いて渡る慎重さと、深い内省的な思考を持つタイプです。不安は「準備不足のシグナル」と捉え、綿密な計画で未来のリスクに備えます。' },
+    'RLOEI': { title: 'The Critic', jaTitle: '鋭い批判者', icon: '⚡', description: '世の中の矛盾や不正に対して敏感で、鋭い批判眼を持つ評論家タイプです。その言葉は時に厳しいですが、現状を打破するための重要な指摘が含まれています。' },
+    'RLOEN': { title: 'The Hermit', jaTitle: '殻に閉じこもる賢者', icon: '🐚', description: '傷つくことを恐れ、強固な防壁の中に引きこもる繊細な人です。しかしその内側では、誰よりも深く物事を考え、独自の哲学体系を構築しています。' },
+    'RLUAI': { title: 'The Poet', jaTitle: '傷つきやすい詩人', icon: '✒️', description: '風に舞う木の葉のように繊細で、世界の美しさや悲しみを敏感に感じ取る詩人です。その儚げな雰囲気は、守ってあげたくなるような魅力を醸し出します。' },
+    'RLUAN': { title: 'The Drifter', jaTitle: '風の吹くまま生きる人', icon: '🍃', description: '確固たる自分を持たず、環境や付き合う人に合わせて自分を変えられるカメレオンのような人です。その捉えどころのなさが、不思議な魅力となっています。' },
+    'RLUEI': { title: 'The Cynic', jaTitle: '皮肉屋の芸術家', icon: '🎨', description: 'メランコリックな気分とシニカルな視点を持ち、それをブラックユーモアやアートに昇華させる表現者です。世の中を斜めから見る視点がユニークです。' },
+    'RLUEN': { title: 'The Lost Soul', jaTitle: '迷える旅人', icon: '🚶', description: '「自分は何者か」「どこへ向かうべきか」を常に問い続ける、永遠の探求者です。定住せず、心の安住の地を求めてさすらうその姿は、どこか哲学的です。' },
+};
+
 export function getSloanType(scores: { E: number, N: number, O: number, A: number, C: number }): SloanType {
     // 1. Determine letters
     const codeMap = {
@@ -273,14 +308,14 @@ export function getSloanType(scores: { E: number, N: number, O: number, A: numbe
         codeMap.O.code
     ].join('');
 
+    const codeKey = sloanCode as keyof typeof SLOAN_TYPES;
+    const typeInfo = SLOAN_TYPES[codeKey] || { title: sloanCode, jaTitle: '不明なタイプ', icon: '❓', description: 'データが見つかりませんでした。' };
+
     // 2. Generate Description
-    const title = `${codeMap.E.label}・${codeMap.C.label}・${codeMap.O.label}・${codeMap.A.label}・${codeMap.N.label} タイプ`;
+    const title = `${typeInfo.jaTitle} (${typeInfo.title}) ${typeInfo.icon}`;
 
     const description = [
-        `あなたの性格タイプは **${sloanCode}** です。`,
-        `${codeMap.E.desc} また、${codeMap.A.desc}`,
-        `${codeMap.C.desc} 一方で、${codeMap.N.desc}`,
-        `${codeMap.O.desc}`
+        typeInfo.description
     ];
 
     // 3. Match Careers

@@ -1,9 +1,12 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   /* Premium Light Theme */
-  --background: #FAFAF9; /* Stone-50 */
-  --foreground: #1C1917; /* Stone-900 */
+  --background: #FAFAF9;
+  /* Stone-50 */
+  --foreground: #1C1917;
+  /* Stone-900 */
   --accent-gold: #D4AF37;
   --accent-navy: #0F172A;
 }

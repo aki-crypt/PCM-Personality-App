@@ -5,6 +5,12 @@ import { questionsNeo, QuestionNeo, Facet } from '../data/questions_neo';
 import { getSloanType } from '../data/sloan';
 import { getTopAdvice } from '../utils/adviceUtils';
 import { getPredictions } from '../data/predictions';
+import { getRelationshipAdvice } from '../data/compatibility';
+import { getManagementAdvice } from '../data/managementAdvice';
+import { BLOG_POSTS } from '../data/blogPosts';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import Link from 'next/link';
 
 const OPTIONS = [
     { value: 1, label: '全く当てはまらない' },
@@ -18,6 +24,10 @@ export default function QuizNeo() {
     const [answers, setAnswers] = useState<Record<number, number>>({});
     const [showResult, setShowResult] = useState(false);
     const [resultData, setResultData] = useState<any>(null);
+
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleOptionChange = (qId: number, value: number) => {
         setAnswers((prev) => ({ ...prev, [qId]: value }));
@@ -46,9 +56,19 @@ export default function QuizNeo() {
         });
 
         // Normalize Facets (0-100)
+        // Score range is 1-5 per question.
+        // Formula: ((Score - Count) / (Count * 4)) * 100
+        // Min: (1*N - N) / 4N = 0.
+        // Mid: (3*N - N) / 4N = 2/4 = 0.5 (50%).
         const normalizedFacets: Record<string, number> = {};
         Object.keys(facetScores).forEach(key => {
-            normalizedFacets[key] = Math.round((facetScores[key as Facet] / (facetCounts[key as Facet] * 5)) * 100);
+            const count = facetCounts[key as Facet];
+            const sum = facetScores[key as Facet];
+            if (count > 0) {
+                normalizedFacets[key] = Math.round(((sum - count) / (count * 4)) * 100);
+            } else {
+                normalizedFacets[key] = 0;
+            }
         });
 
         // 2. Calculate Domain Scores (Average of facets)
@@ -71,17 +91,48 @@ export default function QuizNeo() {
         }
         const { domainScores, facetScores } = calculateScores();
         const sloan = getSloanType(domainScores);
-        setResultData({ scores: domainScores, facets: facetScores, sloan });
+        const predictions = getPredictions(domainScores);
+        setResultData({ scores: domainScores, facets: facetScores, sloan, predictions });
         setShowResult(true);
     };
 
     if (showResult && resultData) {
-        const { scores, facets, sloan } = resultData;
+        const { scores, facets, sloan, predictions } = resultData;
         const topAdvice = getTopAdvice(facets, FACET_LABELS);
-        const predictions = getPredictions(scores);
+        // predictions is already destructured
+        const relationship = getRelationshipAdvice(scores);
+
+        const handleDownloadPDF = async () => {
+            const element = document.getElementById('result-container');
+            if (!element) return;
+
+            try {
+                // Wait for a moment to ensure styles are applied (just in case)
+                await new Promise(r => setTimeout(r, 500));
+
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    allowTaint: true,
+                    backgroundColor: '#FAFAF9' // Match background
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`personality-report-${sloan.code}.pdf`);
+            } catch (err) {
+                console.error(err);
+                alert("PDF生成に失敗しました: " + (err instanceof Error ? err.message : String(err)));
+            }
+        };
 
         return (
-            <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans">
+            <div id="result-container" className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans bg-[#FAFAF9]">
 
                 {/* Header Section */}
                 <div className="text-center mb-16 relative">
@@ -101,7 +152,7 @@ export default function QuizNeo() {
                         <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
                                 <span className="w-1 h-6 bg-yellow-500 mr-3"></span>
-                                Executive Summary
+                                今後の可能性 (Executive Summary)
                             </h3>
                             <div className="space-y-4 text-gray-600 leading-loose text-justify font-light">
                                 {sloan.description.map((line: string, i: number) => (
@@ -114,12 +165,12 @@ export default function QuizNeo() {
                         <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
                                 <span className="w-1 h-6 bg-blue-900 mr-3"></span>
-                                Communication Strategy
+                                コミュニケーション戦略
                             </h3>
 
                             <div className="grid sm:grid-cols-2 gap-8">
                                 <div>
-                                    <h4 className="text-sm font-bold text-blue-900 uppercase tracking-widest mb-4 border-b border-blue-100 pb-2">Strengths</h4>
+                                    <h4 className="text-sm font-bold text-blue-900 uppercase tracking-widest mb-4 border-b border-blue-100 pb-2">強み (Strengths)</h4>
                                     <ul className="space-y-3">
                                         {sloan.communicationAdvice.strength.map((s: string, i: number) => (
                                             <li key={i} className="flex items-start text-sm text-gray-600">
@@ -129,7 +180,7 @@ export default function QuizNeo() {
                                     </ul>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-bold text-red-800 uppercase tracking-widest mb-4 border-b border-red-100 pb-2">Risk Factors</h4>
+                                    <h4 className="text-sm font-bold text-red-800 uppercase tracking-widest mb-4 border-b border-red-100 pb-2">注意点 (Risk Factors)</h4>
                                     <ul className="space-y-3">
                                         {sloan.communicationAdvice.weakness.map((w: string, i: number) => (
                                             <li key={i} className="flex items-start text-sm text-gray-600">
@@ -141,7 +192,7 @@ export default function QuizNeo() {
                             </div>
 
                             <div className="mt-8 bg-blue-50 p-6 rounded-xl border border-blue-100">
-                                <h4 className="text-sm font-bold text-blue-900 uppercase tracking-widest mb-3">Action Plan</h4>
+                                <h4 className="text-sm font-bold text-blue-900 uppercase tracking-widest mb-3">アクションプラン</h4>
                                 <ul className="grid gap-3">
                                     {sloan.communicationAdvice.tips.map((t: string, i: number) => (
                                         <li key={i} className="flex items-start text-sm text-blue-800 italic">
@@ -157,14 +208,17 @@ export default function QuizNeo() {
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full -z-0"></div>
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center relative z-10">
                                 <span className="w-1 h-6 bg-purple-900 mr-3"></span>
-                                Statistical Forecast (Beta)
+                                統計的傾向（予後予測）
                             </h3>
                             <div className="grid gap-4 sm:grid-cols-2 relative z-10">
-                                {predictions.map((pred) => (
+                                {predictions?.map((pred: any) => (
                                     <div key={pred.id} className="bg-gray-50 p-5 rounded-lg border border-gray-100 hover:shadow-md transition-shadow">
                                         <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-[10px] font-bold text-purple-900 tracking-widest uppercase border border-purple-200 px-2 py-1 rounded">
+                                            <span className="text-[10px] font-bold text-white bg-purple-900 tracking-widest uppercase px-2 py-1 rounded">
                                                 {pred.category}
+                                            </span>
+                                            <span className="text-xs text-purple-900 font-bold ml-auto">
+                                                Lv.{pred.score}
                                             </span>
                                         </div>
                                         <h4 className="font-bold text-gray-900 text-sm mb-2">{pred.title}</h4>
@@ -173,13 +227,167 @@ export default function QuizNeo() {
                                         </p>
                                     </div>
                                 ))}
-                                {predictions.length === 0 && (
-                                    <p className="text-gray-500 text-sm italic">特定のリスク傾向は見当たりませんでした。</p>
-                                )}
+                            </div>
+                        </section>
+
+
+                        {/* Partner Compatibility (New) */}
+                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
+                                <span className="w-1 h-6 bg-pink-500 mr-3"></span>
+                                理想のパートナー像
+                            </h3>
+
+                            <div className="bg-pink-50 p-6 rounded-xl border border-pink-100 mb-8 text-center">
+                                <span className="text-xs font-bold text-pink-500 tracking-widest uppercase mb-2 block">Best Match</span>
+                                <div className="text-4xl mb-4 text-pink-500">{relationship.idealPartnerIcon}</div>
+                                <h4 className="text-2xl font-serif font-bold text-gray-900 mb-3">{relationship.idealPartnerType}</h4>
+                                <p className="text-sm text-gray-600 leading-relaxed font-light italic">"{relationship.idealPartnerDescription}"</p>
+                            </div>
+
+                            <div className="mb-6 invisible-scrollbar">
+                                <p className="text-sm text-gray-600 leading-relaxed mb-4 font-bold border-b border-gray-100 pb-2">
+                                    具体的な特徴
+                                </p>
+                                <div className="grid gap-4">
+                                    {relationship.idealPartnerTraits.map((t, i) => (
+                                        <div key={i} className="flex items-start p-3 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                            <span className="text-pink-400 text-lg mr-3 mt-0.5">♥</span>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 text-xs mb-1">{t.trait}</h4>
+                                                <p className="text-[10px] text-gray-500 leading-relaxed">{t.reason}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {relationship.warning && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg text-xs text-gray-500 italic border-l-4 border-gray-300">
+                                    {relationship.warning}
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Management Advice (For Managers) - NEW */}
+                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
+                                <span className="w-1 h-6 bg-indigo-900 mr-3"></span>
+                                マネジメント・リーダーシップ分析 (For Managers)
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-8">
+                                あなたが管理職・リーダーの立場でチームを率いる際に、自分の性格特性がどのように影響するか（バイアス）と、異なるタイプの部下をどう扱うべきかのアドバイスです。
+                            </p>
+
+                            <div className="space-y-12">
+                                {getManagementAdvice(scores).map((advice, i) => (
+                                    <div key={i} className="border-b border-gray-100 last:border-0 pb-12 last:pb-0">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <span className={`text-[10px] font-bold text-white px-2 py-1 rounded uppercase tracking-widest
+                                                ${advice.trait === 'N' ? 'bg-gray-500' :
+                                                    advice.trait === 'E' ? 'bg-blue-600' :
+                                                        advice.trait === 'O' ? 'bg-purple-600' :
+                                                            advice.trait === 'A' ? 'bg-green-600' :
+                                                                'bg-yellow-500'}`}>
+                                                {advice.trait} - {advice.value}
+                                            </span>
+                                            <h4 className="font-serif font-bold text-lg text-gray-900">{advice.title}</h4>
+                                        </div>
+                                        <p className="text-sm text-gray-600 mb-6 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                                            {advice.description}
+                                        </p>
+
+                                        {/* Warning */}
+                                        <div className="mb-6">
+                                            <h5 className="text-xs font-bold text-red-600 uppercase tracking-widest mb-2 flex items-center">
+                                                <span className="text-lg mr-2">⚠️</span>
+                                                リーダーとしての「落とし穴」 (Bias Warning)
+                                            </h5>
+                                            <div className="pl-4 border-l-2 border-red-100">
+                                                <p className="font-bold text-sm text-gray-800 mb-1">{advice.biasWarning.title}</p>
+                                                <p className="text-xs text-gray-600 mb-2 leading-relaxed">{advice.biasWarning.description}</p>
+                                                <div className="flex items-start bg-red-50 p-3 rounded text-xs text-red-800 font-medium">
+                                                    <span className="text-red-500 mr-2 font-bold">対策:</span>
+                                                    {advice.biasWarning.countermeasure}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Subordinate Handling */}
+                                        <div>
+                                            <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-3 flex items-center">
+                                                <span className="text-lg mr-2">👥</span>
+                                                部下のタイプ別・取扱説明書
+                                            </h5>
+                                            <div className="grid gap-4">
+                                                {advice.subordinateHandling.map((sub, j) => (
+                                                    <div key={j} className="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                                                                Target: {sub.targetType}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600 mb-2">
+                                                            <span className="font-bold text-gray-800">リスク:</span> {sub.risk}
+                                                        </p>
+                                                        <p className="text-xs text-gray-600 mb-3">
+                                                            <span className="font-bold text-gray-800">戦略:</span> {sub.strategy}
+                                                        </p>
+                                                        <div className="bg-white p-3 rounded border border-indigo-100 flex items-start">
+                                                            <span className="text-lg mr-2">💬</span>
+                                                            <div>
+                                                                <span className="text-[10px] text-gray-400 block uppercase tracking-wide mb-0.5">Magic Phrase</span>
+                                                                <p className="text-sm font-serif font-bold text-indigo-900 italic">
+                                                                    "{sub.magicPhrase}"
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Recommended Articles (New) */}
+                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-32 h-32 bg-yellow-50 rounded-br-full -z-0"></div>
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center relative z-10">
+                                <span className="w-1 h-6 bg-yellow-500 mr-3"></span>
+                                あなたにおすすめのコラム
+                            </h3>
+                            <div className="grid gap-4 sm:grid-cols-2 relative z-10">
+                                {BLOG_POSTS.filter(post => {
+                                    if (!post.relatedTraits) return false;
+                                    return post.relatedTraits.some(t => {
+                                        const score = scores[t.trait];
+                                        if (t.value === 'High') return score >= 60;
+                                        if (t.value === 'Low') return score <= 40;
+                                        return false;
+                                    });
+                                }).slice(0, 4).map((post) => ( // Show top 4 matches
+                                    <Link key={post.id} href={`/blog/${post.slug}`} target="_blank" className="bg-yellow-50/50 p-5 rounded-lg border border-yellow-100 hover:bg-yellow-50 hover:shadow-md transition-all group">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-[10px] font-bold text-yellow-800 bg-yellow-100 px-2 py-1 rounded uppercase">
+                                                {post.category}
+                                            </span>
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 text-sm mb-2 group-hover:text-yellow-800 transition-colors">
+                                            {post.title} <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                                        </h4>
+                                        <p className="text-xs text-gray-600 leading-snug line-clamp-2">
+                                            {post.excerpt}
+                                        </p>
+                                    </Link>
+                                ))}
                             </div>
                         </section>
 
                     </div>
+
+                    {/* Sidebar (Right) */}
 
                     {/* Sidebar (Right) */}
                     <div className="lg:col-span-5 space-y-8">
@@ -187,14 +395,14 @@ export default function QuizNeo() {
                         {/* Detailed Facets */}
                         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-8 border-b border-gray-100 pb-4">
-                                Trait Breakdown
+                                構成要素の詳細（ファセット）
                             </h3>
                             <div className="space-y-10">
-                                <FacetGroup title="Extraversion" code={sloan.code[0]} score={scores.E} facets={facets} prefix="E" color="blue" />
-                                <FacetGroup title="Neuroticism" code={sloan.code[1]} score={scores.N} facets={facets} prefix="N" color="gray" />
-                                <FacetGroup title="Conscientiousness" code={sloan.code[2]} score={scores.C} facets={facets} prefix="C" color="yellow" />
-                                <FacetGroup title="Agreeableness" code={sloan.code[3]} score={scores.A} facets={facets} prefix="A" color="green" />
-                                <FacetGroup title="Openness" code={sloan.code[4]} score={scores.O} facets={facets} prefix="O" color="purple" />
+                                <FacetGroup title="Extraversion (外向性)" code={sloan.code[0]} score={scores.E} facets={facets} prefix="E" color="blue" />
+                                <FacetGroup title="Neuroticism (神経症的傾向)" code={sloan.code[1]} score={scores.N} facets={facets} prefix="N" color="gray" />
+                                <FacetGroup title="Conscientiousness (誠実性)" code={sloan.code[2]} score={scores.C} facets={facets} prefix="C" color="yellow" />
+                                <FacetGroup title="Agreeableness (協調性)" code={sloan.code[3]} score={scores.A} facets={facets} prefix="A" color="green" />
+                                <FacetGroup title="Openness (開放性)" code={sloan.code[4]} score={scores.O} facets={facets} prefix="O" color="purple" />
                             </div>
                         </div>
 
@@ -202,7 +410,7 @@ export default function QuizNeo() {
                         {topAdvice.length > 0 && (
                             <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-8 rounded-2xl shadow-2xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-40 h-40 bg-white opacity-5 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-                                <h3 className="text-xl font-serif font-bold text-gold mb-6 relative z-10">Key Insights</h3>
+                                <h3 className="text-xl font-serif font-bold text-gold mb-6 relative z-10">重要なインサイト</h3>
                                 <div className="space-y-6 relative z-10">
                                     {topAdvice.map((advice, i) => (
                                         <div key={i} className="">
@@ -222,7 +430,7 @@ export default function QuizNeo() {
 
                         {/* Careers */}
                         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">Recommended Career Paths</h3>
+                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">おすすめのキャリア</h3>
                             <div className="flex flex-wrap gap-2">
                                 {sloan.careers.map((c: string, i: number) => (
                                     <span key={i} className="px-3 py-1 bg-gray-50 text-gray-700 text-xs font-medium uppercase tracking-wider border border-gray-200">{c}</span>
@@ -233,7 +441,7 @@ export default function QuizNeo() {
                     </div>
                 </div>
 
-                <div className="mt-16 text-center">
+                <div className="mt-16 text-center space-x-4">
                     <button
                         onClick={() => {
                             setAnswers({});
@@ -245,8 +453,14 @@ export default function QuizNeo() {
                     >
                         RETAKE ASSESSMENT
                     </button>
+                    <button
+                        onClick={handleDownloadPDF}
+                        className="px-8 py-3 bg-white text-gray-900 border border-gray-200 font-serif tracking-widest hover:bg-gray-50 transition shadow-lg text-sm"
+                    >
+                        DOWNLOAD PDF
+                    </button>
                 </div>
-            </div>
+            </div >
         );
     }
 
@@ -262,6 +476,33 @@ export default function QuizNeo() {
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 font-serif">Deep Analysis</p>
                     <h1 className="text-4xl font-serif font-bold text-gray-900">IPIP-NEO-120</h1>
                     <div className="mt-4 w-24 h-1 bg-yellow-500 mx-auto"></div>
+                </div>
+
+                {/* Legend for Scale */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm text-center">
+                    <p className="text-sm text-gray-500 mb-4 font-medium">以下の質問に対して、最も当てはまる番号を選んでください</p>
+                    <div className="flex flex-wrap justify-center gap-2 sm:gap-6 text-xs sm:text-sm font-bold text-gray-600">
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">1</div>
+                            <span className="text-gray-400">全く違う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">2</div>
+                            <span className="text-gray-400">違う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">3</div>
+                            <span className="text-gray-400">どちらでもない</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mb-1">4</div>
+                            <span className="text-gray-400">そう思う</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full bg-gray-900 text-white shadow-lg flex items-center justify-center mb-1">5</div>
+                            <span className="text-gray-900">強くそう思う</span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Progress */}
@@ -335,8 +576,27 @@ export default function QuizNeo() {
                         </button>
                     </div>
                 </div>
+
+                {/* Debug / Dev Tools */}
+                <div className="text-center pb-8 mt-8 opacity-20 hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => {
+                            const newAnswers: Record<number, number> = {};
+                            questionsNeo.forEach(q => {
+                                newAnswers[q.id] = Math.floor(Math.random() * 5) + 1;
+                            });
+                            setAnswers(newAnswers);
+                            setTimeout(() => {
+                                window.scrollTo(0, document.body.scrollHeight);
+                            }, 100);
+                        }}
+                        className="text-xs text-gray-500 underline cursor-pointer"
+                    >
+                        [DEV] Random Fill All Answers
+                    </button>
+                </div>
             </div>
-        </div>
+        </div >
     );
 }
 
