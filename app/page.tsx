@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Force deploy trigger
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
