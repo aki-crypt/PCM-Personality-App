@@ -150,6 +150,7 @@ export const questionsNeo: QuestionNeo[] = [
     { id: 14, text_en: "Love to help others.", text_ja: "人を助けるのが大好きだ。", domain: 'A', facet: 'A3', key: '+' },
     { id: 44, text_en: "Am concerned about others.", text_ja: "他人のことを気にかけている。", domain: 'A', facet: 'A3', key: '+' },
     { id: 74, text_en: "Am indifferent to the feelings of others.", text_ja: "他人の感情に無関心だ。", domain: 'A', facet: 'A3', key: '-' },
+    { id: 104, text_en: "Turn my back on others.", text_ja: "他人に背を向ける（困っている人を見捨てる）。", domain: 'A', facet: 'A3', key: '-' },
     // Wait, my inferred list for 74 in search result said "Am indifferent" (-). 
     // Let me check my key mapping. 
     // Item 44: "Love to help others" (+).

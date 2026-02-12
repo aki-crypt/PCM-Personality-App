@@ -16,7 +16,7 @@ export default function BlogIndex() {
             <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <Link href="/" className="text-xl font-serif font-bold text-gray-900 tracking-tight">
-                        PCM <span className="text-yellow-600">.</span>
+                        Deux Rêves <span className="text-yellow-600">.</span>
                     </Link>
                     <nav>
                         <Link href="/" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
@@ -74,7 +74,7 @@ export default function BlogIndex() {
             {/* Footer */}
             <footer className="bg-white border-t border-gray-100 py-12 mt-12">
                 <div className="max-w-5xl mx-auto px-4 text-center text-gray-400 text-sm">
-                    <p>&copy; 2026 Personality Career Match. All rights reserved.</p>
+                    <p>&copy; 2026 Deux Rêves. All rights reserved.</p>
                 </div>
             </footer>
         </div>

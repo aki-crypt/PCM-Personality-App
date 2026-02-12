@@ -15,7 +15,7 @@ export const questions: Question[] = [
   { id: 5, text_en: "Don't mind being the center of attention.", text_ja: "注目を浴びても気にならない。", trait: 'E', key: '+' },
   { id: 6, text_en: "Don't talk a lot.", text_ja: "あまりしゃべらない。", trait: 'E', key: '-' },
   { id: 7, text_en: "Keep in the background.", text_ja: "目立たないようにしている。", trait: 'E', key: '-' },
-  { id: 8, text_en: "Have little to say.", text_ja: "あまり言うことがない。", trait: 'E', key: '-' },
+  { id: 8, text_en: "Have little to say.", text_ja: "口数は少ないほうだ。", trait: 'E', key: '-' },
   { id: 9, text_en: "Don't like to draw attention to myself.", text_ja: "自分に注目が集まるのが好きではない。", trait: 'E', key: '-' },
   { id: 10, text_en: "Am quiet around strangers.", text_ja: "知らない人の周りでは静かにしている。", trait: 'E', key: '-' },
 

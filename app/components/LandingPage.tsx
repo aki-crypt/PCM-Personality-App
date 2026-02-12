@@ -4,7 +4,58 @@ import React from 'react';
 import Link from 'next/link';
 import { BLOG_POSTS } from '../data/blogPosts';
 
-export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NEO' | 'CLASSIC') => void }) {
+import { decodeAnswers } from '../utils/urlUtils';
+
+import { questionsNeo } from '../data/questions_neo';
+
+export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NEO' | 'CLASSIC', initialData?: any, initialAnswers?: string) => void }) {
+    const [hasSavedData, setHasSavedData] = React.useState(false);
+
+    React.useEffect(() => {
+        // Check for share URL
+        const searchParams = new URLSearchParams(window.location.search);
+        const share = searchParams.get('share');
+        const mode = searchParams.get('mode');
+
+        if (share && (mode === 'NEO' || mode === 'CLASSIC')) {
+            // Validate basic structure
+            const count = mode === 'NEO' ? questionsNeo.length : 50; // Use dynamic count for NEO
+            if (share.length === count) {
+                // Pass directly to the quiz component to handle decoding/calculating
+                onSelectMode(mode, undefined, share);
+
+                // Clean URL (optional, but nice)
+                window.history.replaceState({}, '', '/');
+                return;
+            }
+        }
+
+        const saved = localStorage.getItem('personality_app_last_result') || localStorage.getItem('neo_result_data');
+        if (saved) {
+            setHasSavedData(true);
+        }
+    }, [onSelectMode]);
+
+    const handleLoadSavedData = () => {
+        const saved = localStorage.getItem('personality_app_last_result') || localStorage.getItem('neo_result_data');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                // Determine mode
+                if (data.mode === 'CLASSIC') {
+                    onSelectMode('CLASSIC', data);
+                } else {
+                    // Default to NEO (legacy data or explicit NEO)
+                    onSelectMode('NEO', data, data.encodedAnswers);
+                }
+            } catch (e) {
+                console.error("Failed to parse saved data", e);
+                localStorage.removeItem('personality_app_last_result');
+                localStorage.removeItem('neo_result_data');
+                setHasSavedData(false);
+            }
+        }
+    };
     return (
         <div className="min-h-screen bg-[#FAFAF9] font-sans">
 
@@ -30,7 +81,7 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
 
                     <div className="flex flex-col sm:flex-row gap-6 justify-center items-center animate-fade-in-up delay-300">
                         <button
-                            onClick={() => document.getElementById('selection')?.scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => document.getElementById('neo-card')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-10 py-4 bg-gray-900 text-white font-serif tracking-widest hover:bg-black transition shadow-2xl text-sm w-64"
                         >
                             START ASSESSMENT
@@ -42,6 +93,17 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
                             READ THE SCIENCE
                         </button>
                     </div>
+
+                    {hasSavedData && (
+                        <div className="mt-8 animate-fade-in-up delay-400">
+                            <button
+                                onClick={handleLoadSavedData}
+                                className="text-sm font-bold text-gray-500 border-b border-gray-300 pb-1 hover:text-gray-900 hover:border-gray-900 transition-colors"
+                            >
+                                ↺ 前回の診断結果を見る (View Last Result)
+                            </button>
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -174,7 +236,7 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
                     </div>
 
                     {/* Option 2: NEO (Premium) */}
-                    <div className="group bg-white p-10 rounded-2xl border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col transform md:-translate-y-4 ring-1 ring-yellow-500/20">
+                    <div id="neo-card" className="group bg-white p-10 rounded-2xl border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col transform md:-translate-y-4 ring-1 ring-yellow-500/20">
                         <div className="absolute top-0 right-0 bg-yellow-500 text-white text-[10px] font-bold px-3 py-1 uppercase tracking-wider">Recommended</div>
                         <div className="absolute top-0 left-0 w-full h-1 bg-yellow-500"></div>
 
@@ -192,6 +254,15 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
                             <div className="flex items-center"><span className="w-5 h-5 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center text-xs mr-3">🔮</span> 行動予測・詳細アドバイス</div>
                         </div>
 
+                        {hasSavedData && (
+                            <button
+                                onClick={handleLoadSavedData}
+                                className="w-full mb-3 py-3 bg-yellow-50 text-yellow-800 font-bold border border-yellow-200 hover:bg-yellow-100 transition shadow-sm text-sm"
+                            >
+                                前回の続きから結果を見る
+                            </button>
+                        )}
+
                         <button
                             onClick={() => onSelectMode('NEO')}
                             className="w-full py-4 bg-gray-900 text-white font-bold hover:bg-black transition shadow-lg"
@@ -205,7 +276,7 @@ export default function LandingPage({ onSelectMode }: { onSelectMode: (mode: 'NE
 
             {/* Footer */}
             <footer className="bg-gray-50 py-12 text-center border-t border-gray-100">
-                <p className="text-gray-400 text-xs font-serif tracking-widest uppercase">Executive Personality Assessment System</p>
+                <p className="text-gray-400 text-xs font-serif tracking-widest uppercase">Deux Rêves | Executive Personality Assessment</p>
                 <p className="text-gray-300 text-[10px] mt-2">Based on IPIP-NEO / Scientific use only</p>
             </footer>
 

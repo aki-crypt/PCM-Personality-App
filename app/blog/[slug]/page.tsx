@@ -24,7 +24,7 @@ export default function BlogPostPage() {
                         ← Back to Columns
                     </Link>
                     <Link href="/" className="text-lg font-serif font-bold text-gray-900 tracking-tight">
-                        PCM <span className="text-yellow-600">.</span>
+                        Deux Rêves <span className="text-yellow-600">.</span>
                     </Link>
                 </div>
             </header>
@@ -49,11 +49,27 @@ export default function BlogPostPage() {
                         </div>
                     </div>
 
-                    <div className="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:font-bold prose-a:text-yellow-700 hover:prose-a:text-yellow-800">
+                    <div className="prose prose-stone prose-lg max-w-none prose-headings:font-serif prose-headings:font-bold prose-a:text-yellow-700 hover:prose-a:text-yellow-800 font-mincho leading-loose tracking-wide">
                         <ReactMarkdown>
                             {post.content}
                         </ReactMarkdown>
                     </div>
+
+                    {post.references && post.references.length > 0 && (
+                        <div className="mt-16 pt-8 border-t border-gray-200">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 font-sans">
+                                Scientific References / Evidence
+                            </h3>
+                            <ul className="space-y-3">
+                                {post.references.map((ref, index) => (
+                                    <li key={index} className="text-xs text-gray-500 font-mono leading-relaxed pl-4 -indent-4">
+                                        <span className="font-bold text-gray-300 mr-2">[{index + 1}]</span>
+                                        {ref}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </article>
 
                 {/* Call to Action */}
@@ -73,7 +89,7 @@ export default function BlogPostPage() {
 
             <footer className="bg-white border-t border-gray-100 py-12 mt-12">
                 <div className="max-w-5xl mx-auto px-4 text-center text-gray-400 text-sm">
-                    <p>&copy; 2026 Personality Career Match. All rights reserved.</p>
+                    <p>&copy; 2026 Deux Rêves. All rights reserved.</p>
                 </div>
             </footer>
         </div>

@@ -5,9 +5,7 @@ import { questions, Question } from '../data/questions';
 import { getSloanType } from '../data/sloan';
 import { getPredictions } from '../data/predictions';
 import { getRelationshipAdvice } from '../data/compatibility';
-import html2canvas from 'html2canvas';
-
-import jsPDF from 'jspdf';
+import { useRouter } from 'next/navigation';
 
 const OPTIONS = [
     { value: 1, label: '全く当てはまらない' },
@@ -17,10 +15,33 @@ const OPTIONS = [
     { value: 5, label: '非常によく当てはまる' },
 ];
 
-export default function QuizClassic() {
+import { encodeAnswers, decodeAnswers } from '../utils/urlUtils';
+
+export default function QuizClassic({ initialData, initialAnswers }: { initialData?: any, initialAnswers?: string }) {
+    const router = useRouter();
     const [answers, setAnswers] = useState<Record<number, number>>({});
     const [showResult, setShowResult] = useState(false);
     const [resultData, setResultData] = useState<any>(null);
+    const [showShareToast, setShowShareToast] = useState(false);
+
+    React.useEffect(() => {
+        window.scrollTo(0, 0);
+        if (initialData) {
+            setResultData(initialData);
+            setShowResult(true);
+        } else if (initialAnswers) {
+            const decoded = decodeAnswers(initialAnswers, questions.length);
+            if (decoded) {
+                setAnswers(decoded);
+            }
+        }
+    }, [initialData, initialAnswers]);
+
+    React.useEffect(() => {
+        if (initialAnswers && Object.keys(answers).length === questions.length && !showResult) {
+            handleFinish(true);
+        }
+    }, [answers, initialAnswers]);
 
     React.useEffect(() => {
         window.scrollTo(0, 0);
@@ -61,51 +82,71 @@ export default function QuizClassic() {
         return normalizedScores;
     };
 
-    const handleFinish = () => {
-        if (!questions.every((q) => answers[q.id] !== undefined)) {
-            alert(`未回答の質問があります。残り ${questions.length - Object.keys(answers).length} 問`);
+    const handleFinish = (isRestoring: boolean = false) => {
+        if (typeof isRestoring !== 'boolean') isRestoring = false;
+
+        if (!isRestoring && !questions.every((q) => answers[q.id] !== undefined)) {
+            alert('Please answer all questions');
             return;
         }
+
         const domainScores = calculateScores();
         const sloan = getSloanType(domainScores);
         const predictions = getPredictions(domainScores);
-        setResultData({ scores: domainScores, sloan, predictions });
+        // Add mode: CLASSIC
+        const data = { mode: 'CLASSIC', scores: domainScores, sloan, predictions, date: new Date().toISOString() };
+        setResultData(data);
         setShowResult(true);
+        if (!isRestoring) {
+            setTimeout(() => window.scrollTo(0, 0), 100);
+        }
+
+        try {
+            localStorage.setItem('personality_app_last_result', JSON.stringify(data));
+        } catch (e) {
+            console.error("Failed to save result", e);
+        }
+    };
+
+    const handleShare = () => {
+        const encoded = encodeAnswers(answers, questions.length);
+        const url = `${window.location.origin}/?share=${encoded}&mode=CLASSIC`;
+        navigator.clipboard.writeText(url).then(() => {
+            setShowShareToast(true);
+            setTimeout(() => setShowShareToast(false), 3000);
+        });
     };
 
     if (showResult && resultData) {
         const { scores, sloan, predictions } = resultData;
         const relationship = getRelationshipAdvice(scores);
 
-        const handleDownloadPDF = async () => {
-            const element = document.getElementById('result-container');
-            if (!element) return;
 
-            try {
-                await new Promise(r => setTimeout(r, 500));
-                const canvas = await html2canvas(element, {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    allowTaint: true,
-                    backgroundColor: '#FAFAF9'
-                });
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                pdf.save(`personality-report-${sloan.code}.pdf`);
-            } catch (err) {
-                console.error(err);
-                alert("PDF生成に失敗しました: " + (err instanceof Error ? err.message : String(err)));
-            }
-        };
 
         return (
-            <div id="result-container" className="max-w-5xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans bg-[#FAFAF9]">
+            <div id="result-container" className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8 font-sans bg-[#FAFAF9]">
+                <div className="flex justify-between items-center mb-8">
+                    <button
+                        onClick={() => {
+                            window.location.href = '/';
+                        }}
+                        className="flex items-center text-gray-500 hover:text-gray-900 transition font-serif font-bold tracking-widest text-xs uppercase"
+                    >
+                        ← Back to Home
+                    </button>
+                    <button
+                        onClick={handleShare}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full text-xs font-bold tracking-wider hover:bg-gray-800 transition"
+                    >
+                        🔗 結果を共有/保存
+                    </button>
+                </div>
 
+                {showShareToast && (
+                    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full shadow-xl z-50 animate-fade-in-up">
+                        ✅ リンクをコピーしました。他の端末に送って保存できます。
+                    </div>
+                )}
                 {/* Header Section */}
                 <div className="text-center mb-16 relative">
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-green-200 opacity-20 blur-3xl rounded-full z-0"></div>
@@ -193,60 +234,6 @@ export default function QuizClassic() {
                             </div>
                         </section>
 
-                        {/* Behavioral Predictions */}
-                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-bl-full -z-0"></div>
-                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center relative z-10">
-                                <span className="w-1 h-6 bg-purple-900 mr-3"></span>
-                                統計的傾向（予後予測）
-                            </h3>
-                            <div className="grid gap-4 sm:grid-cols-2 relative z-10">
-                                {predictions.map((pred: any) => (
-                                    <div key={pred.id} className="bg-gray-50 p-5 rounded-lg border border-gray-100 hover:shadow-md transition-shadow">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="text-[10px] font-bold text-purple-900 tracking-widest uppercase border border-purple-200 px-2 py-1 rounded">
-                                                {pred.category}
-                                            </span>
-                                        </div>
-                                        <h4 className="font-bold text-gray-900 text-sm mb-2">{pred.title}</h4>
-                                        <p className="text-xs text-gray-600 leading-relaxed">
-                                            {pred.description}
-                                        </p>
-                                    </div>
-                                ))}
-                                {predictions.length === 0 && (
-                                    <p className="text-gray-500 text-sm italic">特定のリスク傾向は見当たりませんでした。</p>
-                                )}
-                            </div>
-                        </section>
-
-                        {/* Partner Compatibility (Classic) */}
-                        <section className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
-                            <h3 className="text-xl font-serif font-bold text-gray-900 mb-6 flex items-center">
-                                <span className="w-1 h-6 bg-pink-500 mr-3"></span>
-                                理想のパートナー像
-                            </h3>
-
-                            <div className="bg-pink-50 p-6 rounded-xl border border-pink-100 mb-8 text-center">
-                                <span className="text-xs font-bold text-pink-500 tracking-widest uppercase mb-2 block">Best Match</span>
-                                <div className="text-4xl mb-4 text-pink-500">{relationship.idealPartnerIcon}</div>
-                                <h4 className="text-2xl font-serif font-bold text-gray-900 mb-3">{relationship.idealPartnerType}</h4>
-                                <p className="text-sm text-gray-600 leading-relaxed font-light italic">"{relationship.idealPartnerDescription}"</p>
-                            </div>
-
-                            <div className="grid gap-4">
-                                {relationship.idealPartnerTraits.map((t, i) => (
-                                    <div key={i} className="flex items-start bg-pink-50/50 p-4 rounded-lg border border-pink-100">
-                                        <span className="text-pink-500 text-lg mr-3">♥</span>
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 text-sm mb-1">{t.trait}</h4>
-                                            <p className="text-xs text-gray-600">{t.reason}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
                         {/* Careers */}
                         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
                             <h3 className="text-xl font-serif font-bold text-gray-900 mb-4">おすすめのキャリア</h3>
@@ -255,6 +242,17 @@ export default function QuizClassic() {
                                     <span key={i} className="px-3 py-1 bg-gray-50 text-gray-700 text-xs font-medium uppercase tracking-wider border border-gray-200">{c}</span>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* Upsell / Link to Neo (Optional but good for differentiation) */}
+                        <div className="bg-gray-50 p-8 rounded-2xl border border-gray-200 text-center">
+                            <p className="text-gray-600 mb-4 text-sm">
+                                より詳細な分析（120問・30のファセット分析・将来の予測・マネジメント適性など）を知りたい場合は、<br />
+                                <strong>Deep Analysis (IPIP-NEO-120)</strong> をお試しください。
+                            </p>
+                            <a href="/" className="inline-block px-6 py-2 bg-gray-900 text-white text-sm font-bold tracking-widest rounded hover:bg-black transition">
+                                TRY DEEP ANALYSIS
+                            </a>
                         </div>
 
                     </div>
@@ -273,10 +271,14 @@ export default function QuizClassic() {
                         RETAKE ASSESSMENT
                     </button>
                     <button
-                        onClick={handleDownloadPDF}
+                        onClick={() => {
+                            setAnswers({});
+                            setResultData(null);
+                            router.push('/');
+                        }}
                         className="px-8 py-3 bg-white text-gray-900 border border-gray-200 font-serif tracking-widest hover:bg-gray-50 transition shadow-lg text-sm"
                     >
-                        DOWNLOAD PDF
+                        BACK TO HOME
                     </button>
                 </div>
             </div>
@@ -378,7 +380,7 @@ export default function QuizClassic() {
                 <div className="sticky bottom-8 text-center pt-8 pointer-events-none">
                     <div className="inline-block pointer-events-auto">
                         <button
-                            onClick={handleFinish}
+                            onClick={() => handleFinish(false)}
                             disabled={remaining > 0}
                             className={`
                         px-12 py-4 shadow-2xl rounded-sm font-bold tracking-widest uppercase text-sm transition-all duration-300
@@ -390,6 +392,25 @@ export default function QuizClassic() {
                             {remaining === 0 ? 'View Analysis' : `${remaining} QUESTIONS REMAINING`}
                         </button>
                     </div>
+                </div>
+
+                {/* Debug / Dev Tools */}
+                <div className="text-center pb-8 mt-8 opacity-20 hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => {
+                            const newAnswers: Record<number, number> = {};
+                            questions.forEach(q => {
+                                newAnswers[q.id] = Math.floor(Math.random() * 5) + 1;
+                            });
+                            setAnswers(newAnswers);
+                            setTimeout(() => {
+                                window.scrollTo(0, document.body.scrollHeight);
+                            }, 100);
+                        }}
+                        className="text-xs text-gray-500 underline cursor-pointer"
+                    >
+                        [DEV] Random Fill All Answers
+                    </button>
                 </div>
             </div>
         </div>
