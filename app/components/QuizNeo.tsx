@@ -571,6 +571,9 @@ export default function QuizNeo({ initialData, initialAnswers }: { initialData?:
                     <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.3em] mb-2 font-serif">Deep Analysis</p>
                     <h1 className="text-4xl font-serif font-bold text-gray-900">IPIP-NEO-120</h1>
                     <div className="mt-4 w-24 h-1 bg-yellow-500 mx-auto"></div>
+                    <div className="text-center text-xs text-gray-400 mt-2">
+                        v1.2.0 - Loaded: {questionsNeo.length} questions
+                    </div>
                 </div>
 
                 {/* Legend for Scale */}
