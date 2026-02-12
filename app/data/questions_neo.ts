@@ -1,4 +1,4 @@
-export type Facet =
+export type Facet = // Force update to trigger build
     | 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6'
     | 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6'
     | 'O1' | 'O2' | 'O3' | 'O4' | 'O5' | 'O6'
